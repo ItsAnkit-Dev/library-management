@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Books – Library Management System{% endblock %}
+{% block topbar_title %}Book Catalogue{% endblock %}
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+  <li class="breadcrumb-item active">Books</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Book Catalogue</h1>
+    <p class="page-subtitle">{{ books.total }} total books in the library</p>
+  </div>
+  <a href="{{ url_for('admin.add_book') }}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Add Book
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-end" data-no-spinner>
+      <div class="col-md-5">
+        <input type="text" name="q" value="{{ q }}" class="form-control" id="live-search"
+               placeholder="Search by title, author, ISBN…">
+      </div>
+      <div class="col-md-3">
+        <select name="category" class="form-select">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="status" class="form-select">
+          <option value="">All Status</option>
+          <option value="available"  {% if selected_status == 'available' %}selected{% endif %}>Available</option>
+          <option value="issued"     {% if selected_status == 'issued' %}selected{% endif %}>Issued</option>
+          <option value="lost"       {% if selected_status == 'lost' %}selected{% endif %}>Lost</option>
+          <option value="damaged"    {% if selected_status == 'damaged' %}selected{% endif %}>Damaged</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Search</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Books Table -->
+<div class="table-wrapper">
+  {% if books.items %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width:60px">Cover</th>
+          <th>Title / Author</th>
+          <th>ISBN</th>
+          <th>Category</th>
+          <th>Copies</th>
+          <th>Status</th>
+          <th>Added</th>
+          <th style="width:120px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for book in books.items %}
+        <tr>
+          <td>
+            <img src="{{ url_for('static', filename='uploads/covers/' + book.cover_image) }}"
+                 class="book-cover" alt="{{ book.title }}"
+                 onerror="this.src=`{{ url_for('static', filename='uploads/covers/default_cover.png') }}`">
+          </td>
+          <td>
+            <div class="fw-600" style="color:var(--text-primary)">{{ book.title|truncate(45) }}</div>
+            <div class="fs-12" style="color:var(--text-muted)">
+              <i class="fas fa-pen-nib me-1"></i>{{ book.author }}
+              {% if book.pub_year %} · {{ book.pub_year }}{% endif %}
+            </div>
+          </td>
+          <td>
+            <code style="background:var(--bg);padding:2px 7px;border-radius:5px;font-size:12px">{{ book.isbn }}</code>
+          </td>
+          <td>
+            {% if book.category %}
+            {% set cat_style = 'background:' ~ book.category.color ~ '22;color:' ~ book.category.color %}
+            <span class="badge" {{ ('style="' ~ cat_style ~ '"') | safe }}>
+              <i class="fas {{ book.category.icon }} me-1"></i>{{ book.category.name }}
+            </span>
+            {% else %}
+            <span style="color:var(--text-muted);font-size:12px">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="fw-600">{{ book.available_copies }}/{{ book.total_copies }}</div>
+            <div class="progress mt-1" style="width:50px">
+              <div class="progress-bar" {{ ('style="width:' ~ ((book.available_copies / book.total_copies * 100)|int if book.total_copies else 0) ~ '%"') | safe }}></div>
+            </div>
+          </td>
+          <td><span class="badge badge-{{ book.status }}">{{ book.status.title() }}</span></td>
+          <td class="fs-12" style="color:var(--text-muted)">{{ book.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('admin.edit_book', book_id=book.id) }}"
+                 class="btn btn-ghost btn-xs" data-bs-toggle="tooltip" title="Edit">
+                <i class="fas fa-pen"></i>
+              </a>
+              <form method="POST" action="{{ url_for('admin.delete_book', book_id=book.id) }}" class="d-inline">
+                {{ form.hidden_tag() if form is defined else '' }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-xs" style="background:rgba(239,68,68,.1);color:var(--danger)"
+                        data-confirm="Delete '{{ book.title }}'? (Soft delete)"
+                        data-bs-toggle="tooltip" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if books.pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center px-4 py-3" style="border-top:1px solid var(--border)">
+    <span class="fs-13" style="color:var(--text-muted)">
+      Showing {{ (books.page-1)*books.per_page+1 }}–{{ [books.page*books.per_page, books.total]|min }} of {{ books.total }}
+    </span>
+    <nav>
+      <ul class="pagination mb-0">
+        <li class="page-item {% if not books.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="?page={{ books.prev_num }}&q={{ q }}&category={{ selected_category }}&status={{ selected_status }}">
+            <i class="fas fa-chevron-left"></i>
+          </a>
+        </li>
+        {% for p in books.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if p %}
+          <li class="page-item {% if p == books.page %}active{% endif %}">
+            <a class="page-link" href="?page={{ p }}&q={{ q }}&category={{ selected_category }}&status={{ selected_status }}">{{ p }}</a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not books.has_next %}disabled{% endif %}">
+          <a class="page-link" href="?page={{ books.next_num }}&q={{ q }}&category={{ selected_category }}&status={{ selected_status }}">
+            <i class="fas fa-chevron-right"></i>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon"><i class="fas fa-book"></i></div>
+    <h5>No books found</h5>
+    <p>Try adjusting your search filters or add a new book.</p>
+    <a href="{{ url_for('admin.add_book') }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add First Book
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

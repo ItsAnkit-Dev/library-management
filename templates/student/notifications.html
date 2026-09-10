@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Notifications</h1>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        {% if notifications %}
+            <div class="list-group list-group-flush">
+                {% for notif in notifications %}
+                <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if not notif.is_read %}bg-light border-left-primary{% endif %}" id="notif-{{ notif.id }}">
+                    <div>
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1 fw-bold text-gray-900">{{ notif.title }}</h6>
+                        </div>
+                        <p class="mb-1 text-muted">{{ notif.message }}</p>
+                        <small class="text-muted">{{ notif.created_at.strftime('%d %b %Y, %I:%M %p') }}</small>
+                    </div>
+                    {% if not notif.is_read %}
+                        <button class="btn btn-sm btn-outline-primary mark-read-btn" data-id="{{ notif.id }}" title="Mark as read">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No notifications yet.</h5>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.mark-read-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const notifId = this.getAttribute('data-id');
+            const notifEl = document.getElementById('notif-' + notifId);
+            
+            fetch("{{ url_for('student.read_notification', notif_id=0) }}".replace('0', notifId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf_token"]')?.getAttribute('content') || ''
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    notifEl.classList.remove('bg-light', 'border-left-primary');
+                    this.remove();
+                    // Optionally update badge count if there is one
+                    const badge = document.getElementById('notifBadge');
+                    if (badge) {
+                        let count = parseInt(badge.innerText);
+                        if (count > 0) {
+                            count--;
+                            badge.innerText = count;
+                            if (count === 0) badge.style.display = 'none';
+                        }
+                    }
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

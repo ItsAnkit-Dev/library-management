@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Members – Library Management System{% endblock %}
+{% block topbar_title %}Member Management{% endblock %}
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+  <li class="breadcrumb-item active">Members</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Members</h1>
+    <p class="page-subtitle">{{ members.total }} registered members</p>
+  </div>
+  <a href="{{ url_for('admin.add_member') }}" class="btn btn-primary">
+    <i class="fas fa-user-plus"></i> Add Member
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-end" data-no-spinner>
+      <div class="col-md-7">
+        <input type="text" name="q" value="{{ q }}" class="form-control" id="live-search"
+               placeholder="Search name, username, email, student ID…">
+      </div>
+      <div class="col-md-3">
+        <select name="role" class="form-select">
+          <option value="">All Roles</option>
+          <option value="student"    {% if selected_role=='student' %}selected{% endif %}>Students</option>
+          <option value="librarian"  {% if selected_role=='librarian' %}selected{% endif %}>Librarians</option>
+          <option value="super_admin"{% if selected_role=='super_admin' %}selected{% endif %}>Admins</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="table-wrapper">
+  {% if members.items %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Role</th>
+          <th>Student ID</th>
+          <th>Books Issued</th>
+          <th>Pending Fine</th>
+          <th>Status</th>
+          <th>Last Login</th>
+          <th style="width:120px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in members.items %}
+        <tr data-href="{{ url_for('admin.member_detail', member_id=member.id) }}">
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="user-avatar" style="background:linear-gradient(135deg,var(--primary),var(--secondary));flex-shrink:0">
+                {{ member.full_name[0] }}
+              </div>
+              <div>
+                <div class="fw-600">{{ member.full_name }}</div>
+                <div class="fs-12" style="color:var(--text-muted)">{{ member.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge badge-{{ member.role.replace('_','-') }}">{{ member.role.replace('_',' ').title() }}</span></td>
+          <td class="fs-13">{{ member.student_id or '—' }}</td>
+          <td>
+            <span class="fw-600">{{ member.active_issues_count }}</span>
+            <span style="color:var(--text-muted)">/{{ member.max_books }}</span>
+          </td>
+          <td>
+            {% if member.total_pending_fine > 0 %}
+            <span class="fw-700" style="color:var(--danger)">₹{{ "%.2f"|format(member.total_pending_fine) }}</span>
+            {% else %}
+            <span style="color:var(--success)">₹0</span>
+            {% endif %}
+          </td>
+          <td><span class="badge badge-{{ 'active' if member.is_active else 'inactive' }}">
+            {{ 'Active' if member.is_active else 'Inactive' }}
+          </span></td>
+          <td class="fs-12" style="color:var(--text-muted)">
+            {{ member.last_login.strftime('%d %b, %H:%M') if member.last_login else 'Never' }}
+          </td>
+          <td onclick="event.stopPropagation()">
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('admin.edit_member', member_id=member.id) }}"
+                 class="btn btn-ghost btn-xs" data-bs-toggle="tooltip" title="Edit">
+                <i class="fas fa-pen"></i>
+              </a>
+              <form method="POST" action="{{ url_for('admin.toggle_member', member_id=member.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-xs"
+                        {% if member.is_active %}style="background-color: rgba(239,68,68,.1); color: var(--danger);"{% else %}style="background-color: rgba(34,197,94,.1); color: var(--success);"{% endif %}
+                        data-bs-toggle="tooltip" title="{{ 'Deactivate' if member.is_active else 'Activate' }}">
+                  <i class="fas {{ 'fa-user-slash' if member.is_active else 'fa-user-check' }}"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if members.pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center px-4 py-3" style="border-top:1px solid var(--border)">
+    <span class="fs-13" style="color:var(--text-muted)">
+      {{ (members.page-1)*members.per_page+1 }}–{{ [members.page*members.per_page, members.total]|min }} of {{ members.total }}
+    </span>
+    <nav>
+      <ul class="pagination mb-0">
+        <li class="page-item {% if not members.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="?page={{ members.prev_num }}&q={{ q }}&role={{ selected_role }}">
+            <i class="fas fa-chevron-left"></i>
+          </a>
+        </li>
+        {% for p in members.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if p %}
+          <li class="page-item {% if p == members.page %}active{% endif %}">
+            <a class="page-link" href="?page={{ p }}&q={{ q }}&role={{ selected_role }}">{{ p }}</a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not members.has_next %}disabled{% endif %}">
+          <a class="page-link" href="?page={{ members.next_num }}&q={{ q }}&role={{ selected_role }}">
+            <i class="fas fa-chevron-right"></i>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon"><i class="fas fa-users"></i></div>
+    <h5>No members found</h5>
+    <p>Try a different search term or add a new member.</p>
+    <a href="{{ url_for('admin.add_member') }}" class="btn btn-primary">
+      <i class="fas fa-user-plus"></i> Add Member
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

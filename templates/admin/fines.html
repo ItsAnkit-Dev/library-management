@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Fines{% endblock %}
+{% block content %}
+<h2>Fines</h2>
+<table class="table">
+  <tr><th>Member</th><th>Amount</th><th>Status</th></tr>
+  {% for fine in fines.items %}
+  <tr>
+    <td>{{ fine.member.full_name }}</td>
+    <td>{{ fine.amount }}</td>
+    <td>{{ fine.status }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

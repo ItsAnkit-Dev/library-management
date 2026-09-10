@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Reports & Analytics</h1>
+    <div>
+        <a href="{{ url_for('admin.export_issues') }}" class="btn btn-outline-primary shadow-sm"><i class="fas fa-file-csv"></i> Export Issues</a>
+        <a href="{{ url_for('admin.export_fines') }}" class="btn btn-outline-success shadow-sm"><i class="fas fa-file-csv"></i> Export Fines</a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Fine Summary -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4 h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Fine Summary</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="text-xs font-weight-bold text-muted text-uppercase mb-1">Total Generated</div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">₹{{ "%.2f"|format(fine_summary.total) }}</div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Pending</div>
+                        <div class="h4 mb-0 font-weight-bold text-danger">₹{{ "%.2f"|format(fine_summary.pending) }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Collected</div>
+                        <div class="h4 mb-0 font-weight-bold text-success">₹{{ "%.2f"|format(fine_summary.paid) }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Waived</div>
+                        <div class="h4 mb-0 font-weight-bold text-info">₹{{ "%.2f"|format(fine_summary.waived) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Overdue Alert -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4 h-100">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-danger">Overdue Books ({{ overdue|length }})</h6>
+                <a href="{{ url_for('admin.issues', status='overdue') }}" class="btn btn-sm btn-outline-danger">View All</a>
+            </div>
+            <div class="card-body">
+                {% if overdue %}
+                    <ul class="list-group list-group-flush">
+                        {% for issue in overdue[:5] %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <h6 class="my-0">{{ issue.book.title }}</h6>
+                                <small class="text-muted">{{ issue.member.full_name }}</small>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">{{ issue.days_overdue }} days</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-3x mb-2 text-success"></i>
+                        <p class="mb-0">No overdue books right now!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popular Books -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Most Popular Books (Top 10)</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Rank</th>
+                        <th>Book</th>
+                        <th>Category</th>
+                        <th>Total Borrowed</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book, count in popular %}
+                    <tr>
+                        <td><strong>#{{ loop.index }}</strong></td>
+                        <td>
+                            <strong>{{ book.title }}</strong><br>
+                            <small class="text-muted">{{ book.author }}</small>
+                        </td>
+                        <td>{{ book.category.name if book.category else 'N/A' }}</td>
+                        <td><span class="badge bg-primary px-3 py-2">{{ count }} times</span></td>
+                        <td>
+                            {% if book.available_copies > 0 %}
+                                <span class="text-success"><i class="fas fa-check-circle"></i> Available</span>
+                            {% else %}
+                                <span class="text-danger"><i class="fas fa-times-circle"></i> Issued Out</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center py-4">Not enough data to determine popular books.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

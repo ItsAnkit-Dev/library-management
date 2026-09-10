@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}All Issues{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">All Issues</h1>
+    <a href="{{ url_for('librarian.dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('librarian.all_issues') }}" class="row gx-2 gy-2 mb-4 align-items-center">
+            <div class="col-sm-5">
+                <input type="text" name="q" class="form-control" placeholder="Search by book title, member name, or ISBN..." value="{{ q }}">
+            </div>
+            <div class="col-sm-3">
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="issued" {% if selected_status == 'issued' %}selected{% endif %}>Issued</option>
+                    <option value="overdue" {% if selected_status == 'overdue' %}selected{% endif %}>Overdue</option>
+                    <option value="returned" {% if selected_status == 'returned' %}selected{% endif %}>Returned</option>
+                    <option value="lost" {% if selected_status == 'lost' %}selected{% endif %}>Lost</option>
+                </select>
+            </div>
+            <div class="col-sm-2 text-end">
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Filter</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Book</th>
+                        <th>Member</th>
+                        <th>Issue Date</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in issues.items %}
+                    <tr>
+                        <td>#{{ issue.id }}</td>
+                        <td>
+                            <strong>{{ issue.book.title }}</strong><br>
+                            <small class="text-muted">ISBN: {{ issue.book.isbn }}</small>
+                        </td>
+                        <td>
+                            {{ issue.member.full_name }}<br>
+                            <small class="text-muted">{{ issue.member.student_id or issue.member.username }}</small>
+                        </td>
+                        <td>{{ issue.issue_date.strftime('%d %b %Y') }}</td>
+                        <td>
+                            {{ issue.due_date.strftime('%d %b %Y') }}
+                            {% if issue.status == 'overdue' %}
+                                <br><small class="text-danger">({{ issue.days_overdue }} days overdue)</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if issue.status == 'returned' %}
+                                <span class="badge bg-secondary">Returned</span>
+                            {% elif issue.status == 'overdue' %}
+                                <span class="badge bg-danger">Overdue</span>
+                            {% elif issue.status == 'lost' %}
+                                <span class="badge bg-dark">Lost</span>
+                            {% else %}
+                                <span class="badge bg-success">Issued</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if issue.status in ['issued', 'overdue'] %}
+                                <form method="POST" action="{{ url_for('librarian.renew', issue_id=issue.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" class="btn btn-sm btn-outline-info" title="Renew" onclick="return confirm('Renew this book?');"><i class="fas fa-sync"></i></button>
+                                </form>
+                                <a href="{{ url_for('librarian.return_book', q=issue.book.isbn) }}" class="btn btn-sm btn-outline-success" title="Return"><i class="fas fa-undo"></i></a>
+                            {% else %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if issues.pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item {% if not issues.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('librarian.all_issues', page=issues.prev_num, q=q, status=selected_status) }}">Previous</a>
+                </li>
+                <li class="page-item disabled"><span class="page-link">Page {{ issues.page }} of {{ issues.pages }}</span></li>
+                <li class="page-item {% if not issues.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('librarian.all_issues', page=issues.next_num, q=q, status=selected_status) }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

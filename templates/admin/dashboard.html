@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard – Library Management System{% endblock %}
+{% block topbar_title %}Admin Dashboard{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Dashboard</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Library Overview</h1>
+    <p class="page-subtitle">Welcome back, {{ current_user.full_name.split()[0] }}! Here's what's happening today.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('librarian.issue_book') }}" class="btn btn-primary btn-sm">
+      <i class="fas fa-hand-holding-hand"></i> Issue Book
+    </a>
+    <a href="{{ url_for('admin.add_book') }}" class="btn btn-teal btn-sm">
+      <i class="fas fa-plus"></i> Add Book
+    </a>
+  </div>
+</div>
+
+<!-- Alerts -->
+{% if overdue_issues %}
+<div class="alert alert-danger mb-4" role="alert">
+  <i class="fas fa-triangle-exclamation"></i>
+  <strong>{{ overdue_issues|length }} overdue book(s)</strong> need attention.
+  <a href="{{ url_for('admin.issues') }}?status=overdue" class="ms-2 fw-600" style="color:inherit;text-decoration:underline">View all →</a>
+</div>
+{% endif %}
+
+{% if due_soon %}
+<div class="alert alert-warning mb-4" role="alert">
+  <i class="fas fa-clock"></i>
+  <strong>{{ due_soon|length }} book(s)</strong> due within 2 days.
+</div>
+{% endif %}
+
+<!-- ── STATS GRID ──────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card indigo">
+      <div class="stat-icon indigo"><i class="fas fa-book"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.total_books }}</div>
+        <div class="stat-label">Total Books</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card teal">
+      <div class="stat-icon teal"><i class="fas fa-book-open-reader"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.available_books }}</div>
+        <div class="stat-label">Available</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card amber">
+      <div class="stat-icon amber"><i class="fas fa-arrow-right-arrow-left"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.issued_books }}</div>
+        <div class="stat-label">Currently Issued</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card red">
+      <div class="stat-icon red"><i class="fas fa-circle-exclamation"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.overdue_books }}</div>
+        <div class="stat-label">Overdue</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card green">
+      <div class="stat-icon green"><i class="fas fa-users"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.total_members }}</div>
+        <div class="stat-label">Total Members</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card blue">
+      <div class="stat-icon blue"><i class="fas fa-user-tie"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.active_librarians }}</div>
+        <div class="stat-label">Librarians</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card indigo">
+      <div class="stat-icon indigo"><i class="fas fa-tags"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.total_categories }}</div>
+        <div class="stat-label">Categories</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card teal">
+      <div class="stat-icon teal"><i class="fas fa-indian-rupee-sign"></i></div>
+      <div>
+        <div class="stat-value">₹{{ "%.0f"|format(stats.fine_this_month) }}</div>
+        <div class="stat-label">Fines This Month</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHARTS ROW ─────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h6 class="fw-700 mb-0" style="color:var(--text-primary)">
+          <i class="fas fa-chart-pie me-2" style="color:var(--primary)"></i>Books by Category
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="chart-container" style="height:220px">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h6 class="fw-700 mb-0" style="color:var(--text-primary)">
+          <i class="fas fa-chart-line me-2" style="color:var(--secondary)"></i>Issue Trend (30 days)
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="chart-container" style="height:220px">
+          <canvas id="issueTrendChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <h6 class="fw-700 mb-0" style="color:var(--text-primary)">
+          <i class="fas fa-chart-bar me-2" style="color:var(--accent)"></i>Fine Summary
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="chart-container" style="height:220px">
+          <canvas id="fineChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BOTTOM ROW ─────────────────────────────────────────── -->
+<div class="row g-3">
+
+  <!-- Recent Activity Timeline -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h6 class="fw-700 mb-0" style="color:var(--text-primary)">
+          <i class="fas fa-scroll me-2" style="color:var(--primary)"></i>Recent Activity
+        </h6>
+        <a href="{{ url_for('admin.activity_log') }}" class="btn btn-ghost btn-xs">View all</a>
+      </div>
+      <div class="card-body" style="max-height:380px;overflow-y:auto">
+        {% if recent_activities %}
+        <div class="timeline">
+          {% for log in recent_activities %}
+          {% set icon_map = {
+            'login': ('fa-right-to-bracket','rgba(34,197,94,.15)','#22c55e'),
+            'logout': ('fa-right-from-bracket','rgba(100,116,139,.15)','#64748b'),
+            'issue': ('fa-hand-holding-hand','rgba(99,102,241,.15)','#6366f1'),
+            'return': ('fa-rotate-left','rgba(20,184,166,.15)','#14b8a6'),
+            'book_add': ('fa-plus','rgba(59,130,246,.15)','#3b82f6'),
+            'book_edit': ('fa-pen','rgba(245,158,11,.15)','#f59e0b'),
+            'book_delete': ('fa-trash','rgba(239,68,68,.15)','#ef4444'),
+            'fine_pay': ('fa-indian-rupee-sign','rgba(34,197,94,.15)','#22c55e'),
+            'fine_waive': ('fa-ban','rgba(100,116,139,.15)','#64748b'),
+            'fine_online_pay': ('fa-mobile-screen-button','rgba(34,197,94,.15)','#22c55e'),
+            'member_add': ('fa-user-plus','rgba(59,130,246,.15)','#3b82f6'),
+            'member_edit': ('fa-user-pen','rgba(245,158,11,.15)','#f59e0b'),
+            'reserve': ('fa-bookmark','rgba(236,72,153,.15)','#ec4899'),
+            'settings': ('fa-gear','rgba(100,116,139,.15)','#64748b'),
+            'review': ('fa-star','rgba(234,179,8,.15)','#eab308'),
+            'goal_set': ('fa-bullseye','rgba(6,182,212,.15)','#06b6d4'),
+          } %}
+          {% set icon_data = icon_map.get(log.activity, ('fa-circle','rgba(99,102,241,.15)','#6366f1')) %}
+          <div class="timeline-item">
+            <div class="timeline-dot" {{ ('style="background:' ~ icon_data[1] ~ ';color:' ~ icon_data[2] ~ ';"') | safe }}>
+              <i class="fas {{ icon_data[0] }}"></i>
+            </div>
+            <div class="timeline-body">
+              <p class="timeline-title">{{ log.description or log.activity }}</p>
+              <p class="timeline-meta">
+                {% if log.user %}<strong>{{ log.user.full_name }}</strong> · {% endif %}
+                {{ log.created_at.strftime('%d %b %Y, %I:%M %p') }}
+              </p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state py-4">
+          <div class="empty-state-icon"><i class="fas fa-scroll"></i></div>
+          <p>No activity yet.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Overdue Books -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h6 class="fw-700 mb-0" style="color:var(--text-primary)">
+          <i class="fas fa-triangle-exclamation me-2" style="color:var(--danger)"></i>Overdue Books
+        </h6>
+        <a href="{{ url_for('admin.issues') }}?status=overdue" class="btn btn-ghost btn-xs">View all</a>
+      </div>
+      <div class="card-body p-0">
+        {% if overdue_issues %}
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Book</th>
+                <th>Days Overdue</th>
+                <th>Fine</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for issue in overdue_issues %}
+              <tr>
+                <td>
+                  <div class="fw-600">{{ issue.member.full_name }}</div>
+                  <div class="fs-12" style="color:var(--text-muted)">{{ issue.member.student_id or issue.member.username }}</div>
+                </td>
+                <td class="fs-13">{{ issue.book.title|truncate(30) }}</td>
+                <td><span class="badge badge-overdue">{{ issue.days_overdue }}d</span></td>
+                <td class="fw-600" style="color:var(--danger)">
+                  ₹{{ "%.2f"|format(issue.fine.amount if issue.fine else 0) }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state py-4">
+          <div class="empty-state-icon" style="color:var(--success)"><i class="fas fa-circle-check"></i></div>
+          <h5>No overdue books!</h5>
+          <p>All books are returned on time.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div><!-- /row -->
+{% endblock %}

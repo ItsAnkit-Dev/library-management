@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Activity Log{% endblock %}
+{% block content %}
+<h2>Activity Log</h2>
+<table class="table">
+  <tr><th>User</th><th>Activity</th><th>Date</th></tr>
+  {% for log in logs.items %}
+  <tr>
+    <td>{{ log.user.full_name if log.user else 'System' }}</td>
+    <td>{{ log.description }}</td>
+    <td>{{ log.created_at }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

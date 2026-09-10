@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}History & Fines{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4 text-gray-800">Borrowing History & Fines</h1>
+
+<ul class="nav nav-tabs mb-4" id="historyTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="issues-tab" data-bs-toggle="tab" data-bs-target="#issues" type="button" role="tab" aria-controls="issues" aria-selected="true">Borrowing History</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="fines-tab" data-bs-toggle="tab" data-bs-target="#fines" type="button" role="tab" aria-controls="fines" aria-selected="false">Fines History</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="historyTabContent">
+    <!-- Issues Tab -->
+    <div class="tab-pane fade show active" id="issues" role="tabpanel" aria-labelledby="issues-tab">
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                {% if issues.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Book</th>
+                                    <th>Issue Date</th>
+                                    <th>Due Date</th>
+                                    <th>Return Date</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for issue in issues.items %}
+                                <tr>
+                                    <td>{{ issue.book.title }}</td>
+                                    <td>{{ issue.issue_date.strftime('%d %b %Y') }}</td>
+                                    <td>{{ issue.due_date.strftime('%d %b %Y') }}</td>
+                                    <td>{{ issue.return_date.strftime('%d %b %Y') if issue.return_date else '-' }}</td>
+                                    <td>
+                                        {% if issue.status == 'returned' %}
+                                            <span class="badge bg-secondary">Returned</span>
+                                        {% elif issue.status == 'lost' %}
+                                            <span class="badge bg-dark">Lost</span>
+                                        {% elif issue.status == 'overdue' %}
+                                            <span class="badge bg-danger">Overdue</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Issued</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if issue.status == 'returned' %}
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reviewModal{{ issue.book_id }}">Rate & Review</button>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if issues.pages > 1 %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {% if not issues.has_prev %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('student.history', page=issues.prev_num) }}">Previous</a>
+                            </li>
+                            <li class="page-item disabled"><span class="page-link">Page {{ issues.page }} of {{ issues.pages }}</span></li>
+                            <li class="page-item {% if not issues.has_next %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('student.history', page=issues.next_num) }}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <p class="text-center text-muted py-4">No borrowing history found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Fines Tab -->
+    <div class="tab-pane fade" id="fines" role="tabpanel" aria-labelledby="fines-tab">
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                {% if fines %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date Created</th>
+                                    <th>Book</th>
+                                    <th>Reason</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for fine in fines %}
+                                <tr>
+                                    <td>{{ fine.created_at.strftime('%d %b %Y') }}</td>
+                                    <td>{{ fine.issue.book.title if fine.issue else 'N/A' }}</td>
+                                    <td>{{ fine.reason }}</td>
+                                    <td class="font-weight-bold">₹{{ "%.2f"|format(fine.amount) }}</td>
+                                    <td>
+                                        {% if fine.status == 'paid' %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% elif fine.status == 'waived' %}
+                                            <span class="badge bg-info">Waived</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Unpaid</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if fine.status == 'pending' %}
+                                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#payModal{{ fine.id }}">Pay Online</button>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted py-4">You have no fines on record. Great job!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+{% for issue in issues.items %}
+    {% if issue.status == 'returned' %}
+    <div class="modal fade" id="reviewModal{{ issue.book_id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ url_for('student.submit_review', book_id=issue.book_id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Review "{{ issue.book.title }}"</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Rating</label>
+                            <select name="rating" class="form-select" required>
+                                <option value="5">5 - Excellent</option>
+                                <option value="4">4 - Very Good</option>
+                                <option value="3">3 - Good</option>
+                                <option value="2">2 - Fair</option>
+                                <option value="1">1 - Poor</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Review (optional)</label>
+                            <textarea name="review" class="form-control" rows="3" placeholder="What did you think of the book?"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Submit Review</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+
+{% for fine in fines %}
+    {% if fine.status == 'pending' %}
+    <div class="modal fade" id="payModal{{ fine.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ url_for('student.pay_fine', fine_id=fine.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Pay Fine Online</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <i class="fas fa-qrcode fa-4x mb-3 text-muted"></i>
+                        <h4>₹{{ "%.2f"|format(fine.amount) }}</h4>
+                        <p class="text-muted">Scan the QR code with any UPI app to pay, or use Razorpay mockup.</p>
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check-circle me-2"></i> Simulate Successful Payment
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+
+{% endblock %}

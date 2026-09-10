@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Librarian Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Librarian Dashboard</h1>
+    <div>
+        <a href="{{ url_for('librarian.issue_book') }}" class="btn btn-primary shadow-sm"><i class="fas fa-hand-holding-medical fa-sm text-white-50"></i> Issue Book</a>
+        <a href="{{ url_for('librarian.return_book') }}" class="btn btn-success shadow-sm"><i class="fas fa-undo fa-sm text-white-50"></i> Return Book</a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Today Issued -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Issued Today</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.today_issued }}</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-book fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Today Returned -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Returned Today</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.today_returned }}</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-check fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Pending Returns -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Active Issues</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.pending_returns }}</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-clipboard-list fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Overdue -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Overdue Books</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.overdue }}</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Overdue and Due Soon -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-danger">Overdue Books</h6>
+                <a href="{{ url_for('librarian.all_issues', status='overdue') }}" class="btn btn-sm btn-outline-danger">View All</a>
+            </div>
+            <div class="card-body">
+                {% if overdue_issues %}
+                    <ul class="list-group list-group-flush">
+                        {% for i in overdue_issues %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ i.book.title }}</strong><br>
+                                <small class="text-muted">{{ i.member.full_name }} ({{ i.member.student_id or i.member.username }})</small>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">{{ i.days_overdue }} days</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted text-center my-3">No overdue books at the moment.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-warning">Due in Next 2 Days</h6>
+            </div>
+            <div class="card-body">
+                {% if due_soon %}
+                    <ul class="list-group list-group-flush">
+                        {% for i in due_soon %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ i.book.title }}</strong><br>
+                                <small class="text-muted">{{ i.member.full_name }}</small>
+                            </div>
+                            <span class="badge bg-warning rounded-pill">{{ i.due_date.strftime('%d %b') }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted text-center my-3">No books due soon.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Issues -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Issues</h6>
+                <a href="{{ url_for('librarian.all_issues') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Book</th>
+                                    <th>Member</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in recent %}
+                                <tr>
+                                    <td>{{ i.book.title }}</td>
+                                    <td>{{ i.member.full_name }}</td>
+                                    <td>
+                                        {% if i.status == 'returned' %}
+                                            <span class="badge bg-secondary">Returned</span>
+                                        {% elif i.status == 'overdue' %}
+                                            <span class="badge bg-danger">Overdue</span>
+                                        {% elif i.status == 'lost' %}
+                                            <span class="badge bg-dark">Lost</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Issued</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center my-3">No recent issues.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

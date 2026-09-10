@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Issues{% endblock %}
+{% block content %}
+<h2>Issues</h2>
+<table class="table">
+  <tr><th>Book</th><th>Member</th><th>Status</th></tr>
+  {% for issue in issues.items %}
+  <tr>
+    <td>{{ issue.book.title }}</td>
+    <td>{{ issue.member.full_name }}</td>
+    <td>{{ issue.status }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

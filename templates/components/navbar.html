@@ -1,0 +1,137 @@
+<header class="topbar" id="topbar">
+
+  <!-- Sidebar toggle button -->
+  <button class="topbar-toggle" id="sidebar-toggle" data-bs-toggle="tooltip" title="Toggle Sidebar">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <!-- Page title (breadcrumb) -->
+  <div class="d-none d-md-flex flex-column">
+    <span class="fw-700" style="font-size:14px;color:var(--text-primary)">{% block topbar_title %}Dashboard{% endblock %}</span>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">{% block breadcrumb %}<li class="breadcrumb-item active">Home</li>{% endblock %}</ol>
+    </nav>
+  </div>
+
+  <!-- Spacer -->
+  <div class="flex-grow-1"></div>
+
+  <!-- Global Search -->
+  <div class="d-none d-md-block position-relative me-3" style="width: 300px;">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+      <input type="text" id="global-search-input" class="form-control border-start-0 bg-light" placeholder="Search books..." autocomplete="off">
+    </div>
+    <div id="global-search-results" class="dropdown-menu shadow-custom w-100 position-absolute" style="display:none; top:100%; border:1px solid var(--border)!important; border-radius:12px; margin-top:4px; max-height:300px; overflow-y:auto;">
+      <!-- Results populated via JS -->
+    </div>
+  </div>
+
+  <!-- Right section -->
+  <div class="topbar-right">
+
+    <!-- Dark mode toggle -->
+    <button class="dark-mode-toggle" onclick="toggleTheme()" data-bs-toggle="tooltip" title="Toggle dark mode">
+      <i class="fas fa-moon" id="theme-icon"></i>
+      <span id="theme-label">Dark</span>
+    </button>
+
+    <!-- Notifications bell -->
+    <a href="{% if current_user.is_student %}{{ url_for('student.notifications') }}{% else %}#{% endif %}" class="topbar-btn text-decoration-none" data-bs-toggle="tooltip" title="Notifications">
+      <i class="fas fa-bell"></i>
+      <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+    </a>
+
+    <!-- User avatar dropdown -->
+    <div class="dropdown">
+      <button class="topbar-btn d-flex align-items-center gap-2 pe-0" data-bs-toggle="dropdown" aria-expanded="false">
+        <div class="user-avatar" style="width:34px;height:34px;font-size:13px;
+          background:linear-gradient(135deg,var(--primary),var(--secondary))">
+          {{ current_user.full_name[0] }}
+        </div>
+        <span class="d-none d-md-inline fs-13 fw-600" style="color:var(--text-primary)">
+          {{ current_user.full_name.split()[0] }}
+        </span>
+        <i class="fas fa-chevron-down" style="font-size:10px;color:var(--text-muted)"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-custom border-0" style="
+        background:var(--surface);border:1px solid var(--border)!important;
+        border-radius:12px;min-width:200px;margin-top:8px">
+        <li>
+          <div class="px-4 py-3 border-bottom" style="border-color:var(--border)!important">
+            <div class="fw-700 fs-13" style="color:var(--text-primary)">{{ current_user.full_name }}</div>
+            <div class="fs-12" style="color:var(--text-muted)">{{ current_user.email }}</div>
+            <span class="badge mt-1 badge-{{ current_user.role.replace('_','-') }}">
+              {{ current_user.role.replace('_', ' ').title() }}
+            </span>
+          </div>
+        </li>
+        {% if current_user.is_admin %}
+        <li><a class="dropdown-item py-2 fs-13" href="{{ url_for('admin.settings') }}">
+          <i class="fas fa-gear me-2" style="color:var(--text-muted)"></i>Settings
+        </a></li>
+        {% endif %}
+        <li><hr class="dropdown-divider" style="border-color:var(--border)"></li>
+        <li>
+          <a class="dropdown-item py-2 fs-13" href="{{ url_for('auth.logout') }}"
+             onclick="return confirm('Are you sure you want to log out?')">
+            <i class="fas fa-right-from-bracket me-2" style="color:var(--danger)"></i>
+            <span style="color:var(--danger)">Log Out</span>
+          </a>
+        </li>
+      </ul>
+    </div><!-- /dropdown -->
+
+  </div><!-- /topbar-right -->
+</header>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const searchInput = document.getElementById("global-search-input");
+    const resultsContainer = document.getElementById("global-search-results");
+
+    if (searchInput) {
+        searchInput.addEventListener("input", function() {
+            const q = this.value.trim();
+            if (q.length < 2) {
+                resultsContainer.style.display = "none";
+                return;
+            }
+
+            fetch("{{ url_for('api.search_books') }}?q=" + encodeURIComponent(q))
+                .then(res => res.json())
+                .then(data => {
+                    resultsContainer.innerHTML = "";
+                    if (data.length === 0) {
+                        resultsContainer.innerHTML = '<div class="px-3 py-2 text-muted fs-13">No books found</div>';
+                    } else {
+                        data.forEach(book => {
+                            const link = document.createElement("a");
+                            link.className = "dropdown-item d-flex justify-content-between align-items-center py-2";
+                            // For simplicity, link to browse page searching for this exact book
+                            link.href = "{{ url_for('student.browse') if current_user.is_student else url_for('admin.books') }}?q=" + encodeURIComponent(book.isbn);
+                            link.innerHTML = `
+                                <div>
+                                    <div class="fw-bold fs-13" style="color:var(--text-primary)">${book.title}</div>
+                                    <div class="fs-12 text-muted">${book.author}</div>
+                                </div>
+                                <div>
+                                    <span class="badge ${book.available > 0 ? 'bg-success' : 'bg-danger'}">${book.available > 0 ? 'Available' : 'Unavailable'}</span>
+                                </div>
+                            `;
+                            resultsContainer.appendChild(link);
+                        });
+                    }
+                    resultsContainer.style.display = "block";
+                });
+        });
+
+        // Hide when clicking outside
+        document.addEventListener("click", function(e) {
+            if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.style.display = "none";
+            }
+        });
+    }
+});
+</script>

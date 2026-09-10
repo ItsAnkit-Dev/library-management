@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}My Wishlist{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">My Wishlist / Reservations</h1>
+    <a href="{{ url_for('student.browse') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Browse Books</a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        {% if reservations %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Book Cover</th>
+                            <th>Book Details</th>
+                            <th>Reserved On</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reservations %}
+                        <tr>
+                            <td>
+                                <img src="{{ url_for('static', filename='uploads/covers/' ~ r.book.cover_image) }}" alt="Cover" class="img-thumbnail" style="width: 50px; height: 75px; object-fit: cover;">
+                            </td>
+                            <td>
+                                <strong>{{ r.book.title }}</strong><br>
+                                <small class="text-muted">{{ r.book.author }}</small>
+                            </td>
+                            <td>{{ r.reserved_at.strftime('%d %b %Y, %H:%M') }}</td>
+                            <td>
+                                {% if r.book.available_copies > 0 %}
+                                    <span class="badge bg-success">Available Now!</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Waiting for copy</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('student.cancel_reservation', reservation_id=r.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this from wishlist?');">
+                                        <i class="fas fa-trash"></i> Remove
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="far fa-heart fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">Your wishlist is empty</h4>
+                <p>Reserve books that are currently unavailable, and we'll notify you!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

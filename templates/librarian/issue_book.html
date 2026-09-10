@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Issue Book{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Issue Book</h1>
+    <a href="{{ url_for('librarian.dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Issue New Book</h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-4">
+                        <label for="member_isbn" class="form-label font-weight-bold">Member Identifier</label>
+                        {{ form.member_isbn(class="form-control form-control-lg", placeholder="Enter Username, Student ID, or Membership ID") }}
+                        {% if form.member_isbn.errors %}
+                            <div class="text-danger small mt-1">{{ form.member_isbn.errors[0] }}</div>
+                        {% endif %}
+                        <div class="form-text">Scan Member barcode or type ID manually.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="book_isbn" class="form-label font-weight-bold">Book Identifier</label>
+                        {{ form.book_isbn(class="form-control form-control-lg", placeholder="Enter Book ISBN or Title") }}
+                        {% if form.book_isbn.errors %}
+                            <div class="text-danger small mt-1">{{ form.book_isbn.errors[0] }}</div>
+                        {% endif %}
+                        <div class="form-text">Scan Book ISBN barcode or type title/ISBN manually.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        {{ form.notes(class="form-control", rows="2") }}
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-check-circle"></i> Issue Book</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Simple autofocus management for barcode scanner simulation
+    document.addEventListener("DOMContentLoaded", function() {
+        const memberInput = document.getElementById("member_isbn");
+        const bookInput = document.getElementById("book_isbn");
+        
+        memberInput.focus();
+
+        // If member input is filled and user presses enter (scanner often sends Enter), move to book input
+        memberInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if(memberInput.value.trim() !== '') {
+                    bookInput.focus();
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

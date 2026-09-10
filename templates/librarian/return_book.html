@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Return Book{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Return Book</h1>
+    <a href="{{ url_for('librarian.dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Process Return</h6>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('librarian.return_book') }}" class="mb-4">
+            <div class="input-group input-group-lg">
+                <input type="text" name="q" class="form-control" placeholder="Search by Book ISBN, Title, Member ID, or Username..." value="{{ q }}" autofocus>
+                <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Find Active Issue</button>
+            </div>
+        </form>
+
+        {% if q and not active_issues %}
+            <div class="alert alert-warning">No active issues found matching "{{ q }}".</div>
+        {% elif active_issues %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Book Details</th>
+                            <th>Member Details</th>
+                            <th>Due Date</th>
+                            <th>Status / Fine</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for issue in active_issues %}
+                        <tr>
+                            <td>
+                                <strong>{{ issue.book.title }}</strong><br>
+                                <small class="text-muted">ISBN: {{ issue.book.isbn }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ issue.member.full_name }}</strong><br>
+                                <small class="text-muted">ID: {{ issue.member.student_id or issue.member.membership_id }}</small>
+                            </td>
+                            <td>{{ issue.due_date.strftime('%d %b %Y') }}</td>
+                            <td>
+                                {% if issue.is_overdue %}
+                                    <span class="badge bg-danger">Overdue by {{ issue.days_overdue }} days</span>
+                                {% else %}
+                                    <span class="badge bg-success">On Time</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('librarian.return_book') }}">
+                                    {{ form.hidden_tag() }}
+                                    <input type="hidden" name="issue_id" value="{{ issue.id }}">
+                                    
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Confirm return for {{ issue.book.title }}?');">
+                                            <i class="fas fa-undo"></i> Return
+                                        </button>
+                                        
+                                        <div class="form-check text-nowrap mt-1 ms-2">
+                                            <input class="form-check-input" type="checkbox" name="mark_lost" id="mark_lost_{{ issue.id }}">
+                                            <label class="form-check-label text-danger small" for="mark_lost_{{ issue.id }}">
+                                                Mark Lost
+                                            </label>
+                                        </div>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% elif not q %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-barcode fa-4x mb-3"></i>
+                <p>Scan a book barcode or search to process a return.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

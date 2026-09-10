@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} – Library Management System{% endblock %}
+{% block topbar_title %}{{ title }}{% endblock %}
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{{ url_for('admin.members') }}">Members</a></li>
+  <li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-subtitle">{{ 'Edit member information and access' if member else 'Add a new member to the library system' }}</p>
+  </div>
+  <a href="{{ url_for('admin.members') }}" class="btn btn-ghost">
+    <i class="fas fa-arrow-left"></i> Back
+  </a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="fw-700 mb-0" style="color:var(--text-primary)">Member Information</h6>
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              {{ form.full_name.label(class="form-label") }}
+              {{ form.full_name(class="form-control", placeholder="Full name") }}
+              {% for e in form.full_name.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.username.label(class="form-label") }}
+              {{ form.username(class="form-control", placeholder="Username") }}
+              {% for e in form.username.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.email.label(class="form-label") }}
+              {{ form.email(class="form-control", placeholder="email@example.com") }}
+              {% for e in form.email.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.role.label(class="form-label") }}
+              {{ form.role(class="form-select") }}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.password.label(class="form-label") }}
+              {{ form.password(class="form-control", placeholder="Leave blank to keep existing") }}
+              <div class="form-text">{{ 'Default: library@123' if not member else 'Leave blank to keep existing password' }}</div>
+            </div>
+
+            <div class="col-md-6">
+              {{ form.phone.label(class="form-label") }}
+              {{ form.phone(class="form-control", placeholder="+91-9876543210") }}
+            </div>
+
+            <div class="col-md-4">
+              {{ form.student_id.label(class="form-label") }}
+              {{ form.student_id(class="form-control", placeholder="STU2024001") }}
+            </div>
+
+            <div class="col-md-4">
+              {{ form.department.label(class="form-label") }}
+              {{ form.department(class="form-control", placeholder="Computer Science") }}
+            </div>
+
+            <div class="col-md-4">
+              {{ form.course.label(class="form-label") }}
+              {{ form.course(class="form-control", placeholder="B.Tech") }}
+            </div>
+
+            <div class="col-md-4">
+              {{ form.max_books.label(class="form-label") }}
+              {{ form.max_books(class="form-control", min=1, max=20) }}
+            </div>
+
+            <div class="col-12">
+              {{ form.address.label(class="form-label") }}
+              {{ form.address(class="form-control", rows=2, placeholder="Street, City, State") }}
+            </div>
+
+            <div class="col-12">
+              <div class="form-check form-switch">
+                {{ form.is_active(class="form-check-input") }}
+                {{ form.is_active.label(class="form-check-label", style="color:var(--text-primary)") }}
+              </div>
+            </div>
+
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Save Member
+            </button>
+            <a href="{{ url_for('admin.members') }}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if member %}
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-body text-center">
+        <div class="user-avatar mx-auto mb-3"
+             style="width:64px;height:64px;font-size:26px;background:linear-gradient(135deg,var(--primary),var(--secondary))">
+          {{ member.full_name[0] }}
+        </div>
+        <h6 class="fw-700 mb-1">{{ member.full_name }}</h6>
+        <p class="fs-12 mb-2" style="color:var(--text-muted)">{{ member.email }}</p>
+        <span class="badge badge-{{ member.role.replace('_','-') }}">
+          {{ member.role.replace('_',' ').title() }}
+        </span>
+        {% if member.membership_id %}
+        <div class="mt-2 p-2 rounded" style="background:var(--bg)">
+          <div class="fs-12" style="color:var(--text-muted)">Membership ID</div>
+          <div class="fw-700 fs-13">{{ member.membership_id }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fs-13" style="color:var(--text-secondary)">Books Currently Issued</span>
+          <span class="fw-700">{{ member.active_issues_count }}/{{ member.max_books }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fs-13" style="color:var(--text-secondary)">Pending Fine</span>
+          {% if member.total_pending_fine > 0 %}
+          <span class="fw-700" style="color: var(--danger)">
+          {% else %}
+          <span class="fw-700" style="color: var(--success)">
+          {% endif %}
+            ₹{{ "%.2f"|format(member.total_pending_fine) }}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fs-13" style="color:var(--text-secondary)">Member Since</span>
+          <span class="fw-600 fs-13">{{ member.created_at.strftime('%d %b %Y') }}</span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="fs-13" style="color:var(--text-secondary)">Last Login</span>
+          <span class="fw-600 fs-13">{{ member.last_login.strftime('%d %b') if member.last_login else 'Never' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

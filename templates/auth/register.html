@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Register – Library Management System{% endblock %}
+
+{% block unauth_content %}
+<div class="auth-page" style="align-items:flex-start;padding:40px 24px">
+  <div class="auth-card" style="max-width:540px;margin:auto">
+
+    <div class="auth-logo">
+      <i class="fas fa-user-plus"></i>
+    </div>
+    <h1 class="auth-title">Create Account</h1>
+    <p class="auth-subtitle">Register as a library member</p>
+
+    <form method="POST" action="{{ url_for('auth.register') }}">
+      {{ form.hidden_tag() }}
+
+      <div class="row g-3">
+        <div class="col-12">
+          {{ form.full_name.label(class="form-label") }}
+          {{ form.full_name(class="form-control", placeholder="Your full name") }}
+          {% for e in form.full_name.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          {{ form.username.label(class="form-label") }}
+          {{ form.username(class="form-control", placeholder="Choose a username") }}
+          {% for e in form.username.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          {{ form.email.label(class="form-label") }}
+          {{ form.email(class="form-control", placeholder="your@email.com") }}
+          {% for e in form.email.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          {{ form.password.label(class="form-label") }}
+          {{ form.password(class="form-control", placeholder="Min. 6 characters") }}
+          {% for e in form.password.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          {{ form.confirm.label(class="form-label") }}
+          {{ form.confirm(class="form-control", placeholder="Repeat password") }}
+          {% for e in form.confirm.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          {{ form.student_id.label(class="form-label") }}
+          {{ form.student_id(class="form-control", placeholder="e.g. STU2024001") }}
+        </div>
+
+        <div class="col-md-4">
+          {{ form.department.label(class="form-label") }}
+          {{ form.department(class="form-control", placeholder="e.g. Computer Sci.") }}
+        </div>
+
+        <div class="col-md-4">
+          {{ form.course.label(class="form-label") }}
+          {{ form.course(class="form-control", placeholder="e.g. B.Tech") }}
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-4">
+        <i class="fas fa-user-plus"></i> Create Account
+      </button>
+    </form>
+
+    <div class="text-center mt-3">
+      <span style="color:rgba(255,255,255,.6);font-size:13px">Already have an account?</span>
+      <a href="{{ url_for('auth.login') }}" style="color:rgba(255,255,255,.9);font-weight:600;font-size:13px;margin-left:6px">
+        Sign in
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

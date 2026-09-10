@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} – Library Management System{% endblock %}
+{% block topbar_title %}{{ title }}{% endblock %}
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{{ url_for('admin.books') }}">Books</a></li>
+  <li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-subtitle">{{ 'Edit book details and inventory' if book else 'Add a new book to the catalogue' }}</p>
+  </div>
+  <a href="{{ url_for('admin.books') }}" class="btn btn-ghost">
+    <i class="fas fa-arrow-left"></i> Back to Books
+  </a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="fw-700 mb-0" style="color:var(--text-primary)">Book Details</h6>
+      </div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+          {{ form.hidden_tag() }}
+
+          <div class="row g-3">
+            <div class="col-12">
+              {{ form.title.label(class="form-label") }}
+              {{ form.title(class="form-control", placeholder="Full book title") }}
+              {% for e in form.title.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-8">
+              {{ form.author.label(class="form-label") }}
+              {{ form.author(class="form-control", placeholder="Author name(s)") }}
+              {% for e in form.author.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-4">
+              {{ form.isbn.label(class="form-label") }}
+              {{ form.isbn(class="form-control", placeholder="978-XXXXXXXXXX") }}
+              {% for e in form.isbn.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.publisher.label(class="form-label") }}
+              {{ form.publisher(class="form-control", placeholder="Publisher name") }}
+            </div>
+
+            <div class="col-md-3">
+              {{ form.pub_year.label(class="form-label") }}
+              {{ form.pub_year(class="form-control", placeholder="e.g. 2023") }}
+            </div>
+
+            <div class="col-md-3">
+              {{ form.edition.label(class="form-label") }}
+              {{ form.edition(class="form-control", placeholder="e.g. 3rd") }}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.category_id.label(class="form-label") }}
+              {{ form.category_id(class="form-select") }}
+            </div>
+
+            <div class="col-md-3">
+              {{ form.language.label(class="form-label") }}
+              {{ form.language(class="form-control", placeholder="English") }}
+            </div>
+
+            <div class="col-md-3">
+              {{ form.pages.label(class="form-label") }}
+              {{ form.pages(class="form-control", placeholder="e.g. 450") }}
+            </div>
+
+            <div class="col-md-3">
+              {{ form.total_copies.label(class="form-label") }}
+              {{ form.total_copies(class="form-control", min=1) }}
+              {% for e in form.total_copies.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-12">
+              {{ form.description.label(class="form-label") }}
+              {{ form.description(class="form-control", rows=4, placeholder="Brief description of the book…") }}
+            </div>
+
+            <div class="col-12">
+              {{ form.cover_image.label(class="form-label") }}
+              {{ form.cover_image(class="form-control", accept="image/*", onchange="previewCover(this)") }}
+              {% for e in form.cover_image.errors %}<div class="text-danger fs-12">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Save Book
+            </button>
+            <a href="{{ url_for('admin.books') }}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar: preview + QR -->
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6 class="fw-700 mb-0" style="color:var(--text-primary)">Cover Preview</h6>
+      </div>
+      <div class="card-body text-center">
+        <img id="cover-preview"
+             src="{% if book and book.cover_image != 'default_cover.png' %}{{ url_for('static', filename='uploads/covers/' + book.cover_image) }}{% else %}https://via.placeholder.com/160x210/6366f1/ffffff?text=Book{% endif %}"
+             class="book-cover-lg" alt="Cover preview">
+      </div>
+    </div>
+
+    {% if book %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6 class="fw-700 mb-0" style="color:var(--text-primary)">QR Code</h6>
+      </div>
+      <div class="card-body text-center">
+        <img src="{{ url_for('static', filename='uploads/qr/qr_' + book.isbn + '.png') }}"
+             class="qr-img" alt="QR Code"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div style="display:none;color:var(--text-muted);font-size:13px">QR not generated yet</div>
+        <button class="btn btn-ghost btn-sm mt-2" onclick="copyToClipboard('{{ book.isbn }}', this)">
+          <i class="fas fa-copy"></i> Copy ISBN
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fs-13" style="color:var(--text-secondary)">Total Copies</span>
+          <span class="fw-700">{{ book.total_copies }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fs-13" style="color:var(--text-secondary)">Available</span>
+          <span class="fw-700" style="color:var(--success)">{{ book.available_copies }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fs-13" style="color:var(--text-secondary)">Issued</span>
+          <span class="fw-700" style="color:var(--primary)">{{ book.total_copies - book.available_copies }}</span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="fs-13" style="color:var(--text-secondary)">Times Borrowed</span>
+          <span class="fw-700">{{ book.issues.count() }}</span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function previewCover(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('cover-preview').src = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>
+{% endblock %}
