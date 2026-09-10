@@ -385,14 +385,7 @@
     <div class="rec-card">
       {# Cover image #}
       <div class="rec-cover">
-        {% if book.cover_image and book.cover_image != 'default_cover.png' %}
-          <img src="{{ url_for('static', filename='uploads/covers/' ~ book.cover_image) }}"
-               alt="{{ book.title }}" class="rec-cover-img">
-        {% else %}
-          <div class="rec-cover-placeholder">
-            <i class="fas fa-book-open"></i>
-          </div>
-        {% endif %}
+        <img src="{{ book.cover_url }}" alt="Cover" class="img-fluid rounded mb-2 shadow-sm" style="height: 200px; object-fit: cover; width: 100%;">
         {% if book.available_copies > 0 %}
           <span class="rec-avail-badge available">{{ book.available_copies }} avail.</span>
         {% else %}

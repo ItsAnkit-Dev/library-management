@@ -234,6 +234,18 @@ class Book(db.Model):
     def qr_filename(self):
         return f"qr_{self.isbn}.png"
 
+    @property
+    def cover_url(self):
+        if self.cover_image and self.cover_image != 'default_cover.png':
+            from flask import url_for
+            return url_for('static', filename='uploads/covers/' + self.cover_image)
+        import urllib.parse
+        # Limit title length to prevent URL overflow, split words
+        words = self.title.split()
+        short_title = " ".join(words[:5]) + ("..." if len(words) > 5 else "")
+        encoded_title = urllib.parse.quote_plus(short_title)
+        return f"https://placehold.co/400x600/4F46E5/FFFFFF?text={encoded_title}"
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
